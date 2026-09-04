@@ -79,6 +79,7 @@ import {
   THEME_FILTER,
   TOUCH_CTX_MENU_TIMEOUT,
   VERTICAL_ALIGN,
+  VIDEO_MIME_TYPES,
   YOUTUBE_STATES,
   ZOOM_STEP,
   POINTER_EVENTS,
@@ -320,6 +321,19 @@ import {
   resizeImageFile,
   SVGStringToFile,
 } from "../data/blob";
+
+const isVideoMediaFile = (file: Blob | File | null | undefined): boolean => {
+  if (!file) {
+    return false;
+  }
+  if (file.type && file.type.startsWith("video/")) {
+    return true;
+  }
+  if (file instanceof File && /\.(mp4|webm|ogg|ogv|mov|m4v)$/i.test(file.name)) {
+    return true;
+  }
+  return false;
+};
 import {
   getInitializedImageElements,
   loadHTMLImageElement,
@@ -3048,6 +3062,12 @@ class App extends React.Component<AppProps, AppState> {
             file = SVGStringToFile(string);
           }
         }
+      }
+
+      // prefer spreadsheet data over image file (MS Office/Libre Office)
+      if (file && isVideoMediaFile(file) && this.props.onVideoFile && !data.spreadsheet) {
+        this.props.onVideoFile(file);
+        return;
       }
 
       // prefer spreadsheet data over image file (MS Office/Libre Office)
@@ -9926,11 +9946,33 @@ class App extends React.Component<AppProps, AppState> {
       );
 
       const imageFile = await fileOpen({
-        description: "Image",
-        extensions: Object.keys(
-          IMAGE_MIME_TYPES,
-        ) as (keyof typeof IMAGE_MIME_TYPES)[],
+        description: "Image or video",
+        extensions: [
+          ...(Object.keys(
+            IMAGE_MIME_TYPES,
+          ) as (keyof typeof IMAGE_MIME_TYPES)[]),
+          ...(Object.keys(
+            VIDEO_MIME_TYPES,
+          ) as (keyof typeof VIDEO_MIME_TYPES)[]),
+        ],
       });
+
+      // Mole: hand videos to the host (kite) instead of the image pipeline.
+      if (isVideoMediaFile(imageFile) && this.props.onVideoFile) {
+        this.props.onVideoFile(imageFile);
+        this.setState(
+          {
+            pendingImageElementId: null,
+            newElement: null,
+            activeTool: updateActiveTool(this.state, { type: "selection" }),
+          },
+          () => {
+            this.actionManager.executeAction(actionFinalize);
+          },
+        );
+        setCursor(this.interactiveCanvas, CURSOR_TYPE.AUTO);
+        return;
+      }
 
       const imageElement = this.createImageElement({
         sceneX: x,
@@ -10239,6 +10281,12 @@ class App extends React.Component<AppProps, AppState> {
     );
 
     try {
+      // Mole: video drop → host handler (before image pipeline).
+      if (file && isVideoMediaFile(file) && this.props.onVideoFile) {
+        this.props.onVideoFile(file);
+        return;
+      }
+
       // if image tool not supported, don't show an error here and let it fall
       // through so we still support importing scene data from images. If no
       // scene data encoded, we'll show an error then

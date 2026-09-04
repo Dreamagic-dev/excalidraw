@@ -213,6 +213,15 @@ export const IMAGE_MIME_TYPES = {
   jfif: "image/jfif",
 } as const;
 
+/** Mole: allow picking videos from the image tool file dialog. */
+export const VIDEO_MIME_TYPES = {
+  mp4: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
+  m4v: "video/mp4",
+  ogv: "video/ogg",
+} as const;
+
 export const MIME_TYPES = {
   text: "text/plain",
   html: "text/html",
@@ -227,6 +236,8 @@ export const MIME_TYPES = {
   binary: "application/octet-stream",
   // image
   ...IMAGE_MIME_TYPES,
+  // video (Mole canvas)
+  ...VIDEO_MIME_TYPES,
 } as const;
 
 export const ALLOWED_PASTE_MIME_TYPES = [

@@ -581,6 +581,8 @@ export interface ExcalidrawProps {
     element: NonDeleted<ExcalidrawEmbeddableElement>,
     appState: AppState,
   ) => JSX.Element | null;
+  /** Mole: image tool / drop picked a video — host app handles encode+embed. */
+  onVideoFile?: (file: File) => void;
   aiEnabled?: boolean;
   showDeprecatedFonts?: boolean;
 }
