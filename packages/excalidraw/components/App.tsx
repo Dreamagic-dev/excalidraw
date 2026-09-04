@@ -216,6 +216,7 @@ import {
   isElementCompletelyInViewport,
   isElementInViewport,
 } from "../element/sizeHelpers";
+import { shouldLockAspectRatioWhileResizing } from "../element/freeResize";
 import {
   calculateScrollCenter,
   getElementsWithinSelection,
@@ -3873,7 +3874,13 @@ class App extends React.Component<AppProps, AppState> {
     const _files = Array.isArray(files) ? files : Object.values(files);
 
     for (const fileData of _files) {
-      if (nextFiles[fileData.id]) {
+      const existing = nextFiles[fileData.id];
+      // Mole: allow in-place refresh when BinaryFile.version increases
+      // (e.g. ４線 SVG regenerated to current width×height without stretching dots).
+      const isVersionedRefresh =
+        !!existing &&
+        (fileData.version ?? 0) > (existing.version ?? 0);
+      if (existing && !replace && !isVersionedRefresh) {
         continue;
       }
 
@@ -10605,9 +10612,10 @@ class App extends React.Component<AppProps, AppState> {
       y: gridY,
       width: distance(pointerDownState.originInGrid.x, gridX),
       height: distance(pointerDownState.originInGrid.y, gridY),
-      shouldMaintainAspectRatio: isImageElement(newElement)
-        ? !shouldMaintainAspectRatio(event)
-        : shouldMaintainAspectRatio(event),
+      shouldMaintainAspectRatio: shouldLockAspectRatioWhileResizing(
+        [newElement],
+        event,
+      ),
       shouldResizeFromCenter: shouldResizeFromCenter(event),
       zoom: this.state.zoom.value,
       widthAspectRatio: aspectRatio,
@@ -10839,9 +10847,7 @@ class App extends React.Component<AppProps, AppState> {
         this.scene,
         shouldRotateWithDiscreteAngle(event),
         shouldResizeFromCenter(event),
-        selectedElements.some((element) => isImageElement(element))
-          ? !shouldMaintainAspectRatio(event)
-          : shouldMaintainAspectRatio(event),
+        shouldLockAspectRatioWhileResizing(selectedElements, event),
         resizeX,
         resizeY,
         pointerDownState.resize.center.x,
