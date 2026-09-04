@@ -33,6 +33,19 @@ import { throttleRAF } from "../utils";
 import { getBoundTextElement } from "../element/textElement";
 import { isElementLink } from "../element/elementLink";
 
+/** MoleTown: fixed-page bridge set by the host app (kite collab-canvas). */
+type MoleCanvasPageBridge = {
+  mode: "infinite" | "fixed";
+  width: number;
+  height: number;
+};
+
+declare global {
+  interface Window {
+    __MOLE_CANVAS_PAGE__?: MoleCanvasPageBridge | null;
+  }
+}
+
 const GridLineColor = {
   Bold: "#dddddd",
   Regular: "#e5e5e5",
@@ -238,6 +251,49 @@ const _renderStaticScene = ({
 
   // Apply zoom
   context.scale(appState.zoom.value, appState.zoom.value);
+
+  // MoleTown: finite page — outside fill + clip content (selection UI stays on interactive canvas)
+  let molePageClip: {
+    pageX: number;
+    pageY: number;
+    width: number;
+    height: number;
+  } | null = null;
+  try {
+    const molePage =
+      typeof window !== "undefined" ? window.__MOLE_CANVAS_PAGE__ : null;
+    if (
+      molePage &&
+      molePage.mode === "fixed" &&
+      molePage.width > 0 &&
+      molePage.height > 0
+    ) {
+      const vw = normalizedWidth / appState.zoom.value;
+      const vh = normalizedHeight / appState.zoom.value;
+      const pageX = appState.scrollX;
+      const pageY = appState.scrollY;
+      context.save();
+      context.fillStyle = "#F9FAFD";
+      context.fillRect(0, 0, vw, vh);
+      context.fillStyle =
+        typeof appState.viewBackgroundColor === "string" &&
+        appState.viewBackgroundColor !== "transparent"
+          ? appState.viewBackgroundColor
+          : "#ffffff";
+      context.fillRect(pageX, pageY, molePage.width, molePage.height);
+      context.restore();
+      context.save();
+      context.beginPath();
+      context.rect(pageX, pageY, molePage.width, molePage.height);
+      context.clip();
+      molePageClip = {
+        pageX,
+        pageY,
+        width: molePage.width,
+        height: molePage.height,
+      };
+    }
+  } catch (_) {}
 
   // Grid
   if (renderGrid) {
@@ -454,6 +510,21 @@ const _renderStaticScene = ({
       console.error(error);
     }
   });
+
+  // MoleTown: end page clip + draw border above clipped content
+  if (molePageClip) {
+    context.restore();
+    context.save();
+    context.strokeStyle = "#a1a1aa";
+    context.lineWidth = 1 / appState.zoom.value;
+    context.strokeRect(
+      molePageClip.pageX,
+      molePageClip.pageY,
+      molePageClip.width,
+      molePageClip.height,
+    );
+    context.restore();
+  }
 };
 
 /** throttled to animation framerate */

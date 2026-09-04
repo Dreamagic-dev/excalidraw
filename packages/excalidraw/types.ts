@@ -624,9 +624,22 @@ export type CanvasActions = Partial<{
 export type UIOptions = Partial<{
   dockedSidebarBreakpoint: number;
   canvasActions: CanvasActions;
-  tools: {
+  tools: Partial<{
     image: boolean;
-  };
+    selection: boolean;
+    rectangle: boolean;
+    diamond: boolean;
+    ellipse: boolean;
+    arrow: boolean;
+    line: boolean;
+    freedraw: boolean;
+    text: boolean;
+    eraser: boolean;
+    hand: boolean;
+    frame: boolean;
+    embeddable: boolean;
+    laser: boolean;
+  }>;
   /** @deprecated does nothing. Will be removed in 0.15 */
   welcomeScreen?: boolean;
 }>;
