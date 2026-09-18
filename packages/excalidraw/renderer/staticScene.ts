@@ -164,6 +164,10 @@ const renderLinkIcon = (
   appState: StaticCanvasAppState,
   elementsMap: ElementsMap,
 ) => {
+  // Mole: embeddable.link is the video/embed URL — don't paint the link badge.
+  if (isIframeLikeElement(element)) {
+    return;
+  }
   if (element.link && !appState.selectedElementIds[element.id]) {
     const [x1, y1, x2, y2] = getElementAbsoluteCoords(element, elementsMap);
     const [x, y, width, height] = getLinkHandleFromCoords(

@@ -10,6 +10,7 @@ import type {
 } from "../../element/types";
 import { DEFAULT_LINK_SIZE } from "../../renderer/renderElement";
 import type { AppState, UIAppState } from "../../types";
+import { isIframeLikeElement } from "../../element/typeChecks";
 
 export const EXTERNAL_LINK_IMG = document.createElement("img");
 EXTERNAL_LINK_IMG.src = `data:${MIME_TYPES.svg}, ${encodeURIComponent(
@@ -80,7 +81,12 @@ export const isPointHittingLink = (
   [x, y]: GlobalPoint,
   isMobile: boolean,
 ) => {
-  if (!element.link || appState.selectedElementIds[element.id]) {
+  if (
+    !element.link ||
+    appState.selectedElementIds[element.id] ||
+    // Mole: embeddable/iframe link is the media URL, not a hyperlink.
+    isIframeLikeElement(element)
+  ) {
     return false;
   }
   if (
