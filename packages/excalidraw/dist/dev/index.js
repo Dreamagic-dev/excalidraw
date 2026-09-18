@@ -28578,15 +28578,16 @@ var App = class _App extends React43.Component {
           { clientX, clientY },
           this.state
         );
+        const allowVideo = Boolean(this.props.onVideoFile);
         const imageFile = await fileOpen({
-          description: "Image or video",
+          description: allowVideo ? "Image or video" : "Image",
           extensions: [
             ...Object.keys(
               IMAGE_MIME_TYPES
             ),
-            ...Object.keys(
+            ...allowVideo ? Object.keys(
               VIDEO_MIME_TYPES
-            )
+            ) : []
           ]
         });
         if (isVideoMediaFile(imageFile) && this.props.onVideoFile) {

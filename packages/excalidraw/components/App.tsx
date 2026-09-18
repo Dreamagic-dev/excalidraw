@@ -9952,15 +9952,18 @@ class App extends React.Component<AppProps, AppState> {
         this.state,
       );
 
+      const allowVideo = Boolean(this.props.onVideoFile);
       const imageFile = await fileOpen({
-        description: "Image or video",
+        description: allowVideo ? "Image or video" : "Image",
         extensions: [
           ...(Object.keys(
             IMAGE_MIME_TYPES,
           ) as (keyof typeof IMAGE_MIME_TYPES)[]),
-          ...(Object.keys(
-            VIDEO_MIME_TYPES,
-          ) as (keyof typeof VIDEO_MIME_TYPES)[]),
+          ...(allowVideo
+            ? (Object.keys(
+                VIDEO_MIME_TYPES,
+              ) as (keyof typeof VIDEO_MIME_TYPES)[])
+            : []),
         ],
       });
 
